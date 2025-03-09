@@ -1,73 +1,60 @@
-import {createContext, useContext, useState, useEffect} from 'react'
+import { createContext, useContext, useState, useEffect } from "react";
 
 export const LoanContext = createContext();
 
 export const LoanProvider = ({ children }) => {
-
-
   const [loan, setLoan] = useState([]);
 
-
+  // Load loans from localStorage on first render
   useEffect(() => {
-
-    const storedLoan = localStorage.getItem("newloan");
-    if (storedLoan) {
-      setLoan(JSON.parse(storedLoan))
-    }
+    const storedLoans = JSON.parse(localStorage.getItem("loans")) || [];
+    setLoan(storedLoans);
   }, []);
-  
-  //add loan
-  const addLoan = (loanAmount, loanType, loanTerm, interestRate, repaymentSchedule, status, loanDuration, collateral) => { 
 
-    if (!loanAmount || !loanType || !loanTerm || !interestRate || !repaymentSchedule || !status || !loanDuration || !collateral)
+  // Sync loans with localStorage whenever state changes
+  useEffect(() => {
+    localStorage.setItem("loans", JSON.stringify(loan));
+  }, [loan]);
+
+  // Add Loan
+  const addLoan = (loanData) => {
+    if (Object.values(loanData).some((field) => !field)) {
       return alert("Fill all the fields");
+    }
 
-    const loans = JSON.parse(localStorage.getItem("loans")) || [];
+    if (loan.some((l) => l.loanType === loanData.loanType)) {
+      return alert("Loan already exists");
+    }
 
-    if (loans.some((l) => l.loanType === loanType)) 
-      return alert("Loan already Exists")
+    const updatedLoans = [...loan, loanData];
+    setLoan(updatedLoans);
+    alert("Loan added successfully");
+  };
 
-    loans.push({ loanAmount, loanType, loanTerm, interestRate, repaymentSchedule, status, loanDuration, collateral });
-    localStorage.setItem("loans", JSON.stringify(loans));
-    setLoan(loans)
-    alert("Loan added successfully")
-  }
+  // View Loan
+  const viewLoan = (loanType) => loan.find((l) => l.loanType === loanType);
 
-
-  //view loan
-
-  const viewLoan = (loanType) => {
-    const storedLoan = JSON.parse(localStorage.getItem("loans"));
-    return storedLoan.find((loan) => loan.loanType === loanType)
-  }
-
-  //update loan
-
+  // Update Loan
   const updateLoan = (updatedLoan) => {
+    const updatedLoans = loan.map((l) =>
+      l.loanType === updatedLoan.loanType ? updatedLoan : l
+    );
+    setLoan(updatedLoans);
+  };
 
-    let storedLoan = JSON.parse(localStorage.getItem("loans")) || [];
-
-    storedLoan = storedLoan.map((loan) =>
-      loan.loanType === updatedLoan.loanType ? updatedLoan : loan
-    )
-    localStorage.setItem("loans", JSON.stringify(storedLoan));
-    setLoan(storedLoan)
-  }
-
-  //delete loan
-
-  const deleteLoan = () => {
-    localStorage.removeItem("newLoan")
-    setLoan(null)
-  }
+  // Delete Loan
+  const deleteLoan = (loanType) => {
+    const updatedLoans = loan.filter((l) => l.loanType !== loanType);
+    setLoan(updatedLoans);
+  };
 
   return (
-
-    <LoanContext.Provider value={{ loan, addLoan, viewLoan, updateLoan, deleteLoan }}>
+    <LoanContext.Provider
+      value={{ loan, addLoan, viewLoan, updateLoan, deleteLoan }}
+    >
       {children}
     </LoanContext.Provider>
+  );
+};
 
-  )
-
-}
-  export const useLoan = () => useContext(LoanContext)
+export const useLoan = () => useContext(LoanContext);

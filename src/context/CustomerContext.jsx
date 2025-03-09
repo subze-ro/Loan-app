@@ -1,66 +1,50 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useContext, useState, useEffect } from "react";
 
-// Create context
 export const CustomerContext = createContext();
 
-// Provide context
 export const CustomerProvider = ({ children }) => {
-  const [customer, setCustomer] = useState([]);
+  const [customers, setCustomers] = useState([]);
 
-  // On page load, retrieve stored customer data
   useEffect(() => {
-    const storedCustomer = localStorage.getItem("newcustomer");
-    if (storedCustomer) {
-      setCustomer(JSON.parse(storedCustomer));
-    }
+    const storedCustomers = JSON.parse(localStorage.getItem("customers")) || [];
+    setCustomers(storedCustomers);
   }, []);
 
-  // Add customer
-  const createCustomer = (fullName, nationaId, phoneNumber, emailAddress, homeAddress, employmentStatus, monthlyIncome, guranterName, dateRegistered) => {
-    if (!fullName || !nationaId || !phoneNumber || !emailAddress || !homeAddress || !employmentStatus || !monthlyIncome || !guranterName || !dateRegistered)
-      return alert('Fill all fields');
+  // Add Customer
+  const addCustomer = (name, email, phone, address) => {
+    if (!name || !email || !phone || !address)
+      return alert("Fill all the fields");
 
-    const customers = JSON.parse(localStorage.getItem("customers")) || [];
-
-    if (customers.some((c) => c.fullName === fullName)) {
-      return alert("Customer already exists");
-    }
-
-    customers.push({ fullName, nationaId, phoneNumber, emailAddress, homeAddress, employmentStatus, monthlyIncome, guranterName, dateRegistered });
-    localStorage.setItem("customers", JSON.stringify(customers));
+    const newCustomer = { id: Date.now(), name, email, phone, address };
+    const updatedCustomers = [...customers, newCustomer];
+    setCustomers(updatedCustomers);
+    localStorage.setItem("customers", JSON.stringify(updatedCustomers));
     alert("Customer added successfully");
   };
 
-  // View customer
-  const viewCustomer = (fullName) => {
-    const storedCustomer = JSON.parse(localStorage.getItem("customers"));
-    return storedCustomer?.find((customer) => customer.fullName === fullName);
-  };
-
-  // Update customer
+  // Update Customer
   const updateCustomer = (updatedCustomer) => {
-    let storedCustomer = JSON.parse(localStorage.getItem("customers")) || [];
-
-    storedCustomer = storedCustomer.map((customer) =>
-      customer.fullName === updatedCustomer.fullName ? updatedCustomer : customer
+    const updatedCustomers = customers.map((customer) =>
+      customer.id === updatedCustomer.id ? updatedCustomer : customer
     );
-
-    localStorage.setItem("customers", JSON.stringify(storedCustomer));
-    setCustomer(storedCustomer);
+    setCustomers(updatedCustomers);
+    localStorage.setItem("customers", JSON.stringify(updatedCustomers));
   };
 
-  // Delete customer
-  const deleteCustomer = () => {
-    localStorage.removeItem("newcustomer");
-    setCustomer(null);
+  // Delete Customer
+  const deleteCustomer = (id) => {
+    const updatedCustomers = customers.filter((customer) => customer.id !== id);
+    setCustomers(updatedCustomers);
+    localStorage.setItem("customers", JSON.stringify(updatedCustomers));
   };
 
   return (
-    <CustomerContext.Provider value={{ customer, createCustomer, viewCustomer, updateCustomer, deleteCustomer }}>
+    <CustomerContext.Provider
+      value={{ customers, addCustomer, updateCustomer, deleteCustomer }}
+    >
       {children}
     </CustomerContext.Provider>
   );
 };
 
-// ✅ Corrected useCustomer hook
 export const useCustomer = () => useContext(CustomerContext);
